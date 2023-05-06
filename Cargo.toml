@@ -1,0 +1,15 @@
+[package]
+name = "airdash_id"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+chrono = "0.4.24"
+proc-bitfield = "0.2.2"
+
+[dev-dependencies]
+criterion = "0.3"
+
+[[bench]]
+name = "snowflake_bench"
+harness = false
