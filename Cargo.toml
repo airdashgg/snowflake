@@ -1,15 +1,21 @@
 [package]
-name = "airdash_id"
-version = "0.1.0"
-edition = "2021"
+name = 'airdash_id'
+version = '0.1.0'
+edition = '2021'
+license = 'MIT'
 
 [dependencies]
-chrono = "0.4.24"
-proc-bitfield = "0.2.2"
+proc-bitfield = '0.2.2'
+time = { version = "0.3.21", features = ["macros"] }
 
-[dev-dependencies]
-criterion = "0.3"
+[features]
+default = []
+bench = []
+
+# disabled so it doesnt get included in dependents
+# [dev-dependencies]
+# criterion = '0.3'
 
 [[bench]]
-name = "snowflake_bench"
+name = 'snowflake_bench'
 harness = false

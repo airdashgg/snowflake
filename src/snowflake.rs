@@ -1,9 +1,9 @@
 use std::fmt::Display;
 
-use chrono::{DateTime, Utc};
 use proc_bitfield::bitfield;
+use time::OffsetDateTime;
 
-use crate::AIRDASH_EPOCH;
+use crate::{millis, AIRDASH_EPOCH};
 
 bitfield! {
   /// ```md
@@ -32,25 +32,25 @@ bitfield! {
 
 impl Snowflake {
   pub fn new(worker: u8, process: u8, increment: u16) -> Self {
-    Self::new_with_timestamp_and_epoch(worker, process, increment, Utc::now(), AIRDASH_EPOCH)
+    Self::new_with_timestamp_and_epoch(worker, process, increment, OffsetDateTime::now_utc(), AIRDASH_EPOCH)
   }
 
-  pub fn new_with_timestamp(worker: u8, process: u8, increment: u16, timestamp: DateTime<Utc>) -> Self {
+  pub fn new_with_timestamp(worker: u8, process: u8, increment: u16, timestamp: OffsetDateTime) -> Self {
     Self::new_with_timestamp_and_epoch(worker, process, increment, timestamp, AIRDASH_EPOCH)
   }
 
   pub fn new_with_epoch(worker: u8, process: u8, increment: u16, epoch: u64) -> Self {
-    Self::new_with_timestamp_and_epoch(worker, process, increment, Utc::now(), epoch)
+    Self::new_with_timestamp_and_epoch(worker, process, increment, OffsetDateTime::now_utc(), epoch)
   }
 
   pub fn new_with_timestamp_and_epoch(
     worker: u8,
     process: u8,
     increment: u16,
-    timestamp: DateTime<Utc>,
+    timestamp: OffsetDateTime,
     epoch: u64,
   ) -> Self {
-    let offset_timestamp_ms = (timestamp.timestamp_millis() as u64) - epoch;
+    let offset_timestamp_ms = millis(timestamp) - epoch;
 
     Self(0)
       .with_worker(worker)
@@ -69,7 +69,7 @@ impl Display for Snowflake {
 
 #[cfg(test)]
 mod tests {
-  use chrono::TimeZone;
+  use time::macros::datetime;
 
   use super::*;
 
@@ -91,51 +91,46 @@ mod tests {
 
   #[test]
   fn test_new_with_timestamp() {
-    let timestamp = Utc.with_ymd_and_hms(2022, 7, 8, 9, 10, 11).unwrap();
+    let timestamp = datetime!(2022-07-08 09:10:11).assume_utc();
 
     let snowflake = Snowflake::new_with_timestamp(WORKER, PROCESS, INCREMENT, timestamp);
 
     assert_eq!(snowflake.worker(), WORKER);
     assert_eq!(snowflake.process(), PROCESS);
     assert_eq!(snowflake.increment(), INCREMENT);
-    assert_eq!(snowflake.offset_timestamp(), timestamp.timestamp_millis() as u64);
+    assert_eq!(snowflake.offset_timestamp(), millis(timestamp));
   }
 
   #[test]
   fn test_new_with_epoch() {
-    let epoch_timestamp = Utc.with_ymd_and_hms(2014, 7, 8, 9, 10, 11).unwrap();
+    let epoch_timestamp = datetime!(2014-07-08 09:10:11).assume_utc();
 
-    let snowflake = Snowflake::new_with_epoch(WORKER, PROCESS, INCREMENT, epoch_timestamp.timestamp_millis() as u64);
+    let snowflake = Snowflake::new_with_epoch(WORKER, PROCESS, INCREMENT, millis(epoch_timestamp));
 
     assert_eq!(snowflake.worker(), WORKER);
     assert_eq!(snowflake.process(), PROCESS);
     assert_eq!(snowflake.increment(), INCREMENT);
     assert_eq!(
       snowflake.offset_timestamp(),
-      snowflake.timestamp() + epoch_timestamp.timestamp_millis() as u64
+      snowflake.timestamp() + millis(epoch_timestamp)
     );
   }
 
   #[test]
   fn test_new_with_timestamp_and_epoch() {
-    let timestamp = Utc.with_ymd_and_hms(2022, 7, 8, 9, 10, 11).unwrap();
-    let epoch_timestamp = Utc.with_ymd_and_hms(2014, 7, 8, 9, 10, 11).unwrap();
+    let timestamp = datetime!(2022-07-08 09:10:11).assume_utc();
+    let epoch_timestamp = datetime!(2014-07-08 09:10:11).assume_utc();
 
-    let snowflake = Snowflake::new_with_timestamp_and_epoch(
-      WORKER,
-      PROCESS,
-      INCREMENT,
-      timestamp,
-      epoch_timestamp.timestamp_millis() as u64,
-    );
+    let snowflake =
+      Snowflake::new_with_timestamp_and_epoch(WORKER, PROCESS, INCREMENT, timestamp, millis(epoch_timestamp));
 
     assert_eq!(snowflake.worker(), WORKER);
     assert_eq!(snowflake.process(), PROCESS);
     assert_eq!(snowflake.increment(), INCREMENT);
-    assert_eq!(snowflake.offset_timestamp(), timestamp.timestamp_millis() as u64);
+    assert_eq!(snowflake.offset_timestamp(), millis(timestamp));
     assert_eq!(
       snowflake.offset_timestamp(),
-      snowflake.timestamp() + epoch_timestamp.timestamp_millis() as u64
+      snowflake.timestamp() + millis(epoch_timestamp)
     );
   }
 }

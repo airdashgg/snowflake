@@ -43,9 +43,10 @@ impl Iterator for SnowflakeGenerator {
 mod tests {
   use std::collections::HashSet;
 
-  use chrono::Utc;
+  use time::OffsetDateTime;
 
   use super::*;
+  use crate::millis;
 
   const WORKER: u8 = 8;
   const PROCESS: u8 = 26;
@@ -67,7 +68,7 @@ mod tests {
 
   #[test]
   fn test_generates_correct_values() {
-    let start_time = Utc::now();
+    let start_time = OffsetDateTime::now_utc();
 
     let generator = SnowflakeGenerator::new(WORKER, PROCESS);
 
@@ -79,7 +80,7 @@ mod tests {
       assert_eq!(snowflake.worker(), WORKER);
       assert_eq!(snowflake.process(), PROCESS);
 
-      assert!(snowflake.offset_timestamp() >= start_time.timestamp_millis() as u64);
+      assert!(snowflake.offset_timestamp() >= millis(start_time));
     }
   }
 }

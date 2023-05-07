@@ -1,6 +1,9 @@
+#[cfg(feature = "bench")]
 use airdash_id::SnowflakeGenerator;
+#[cfg(feature = "bench")]
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
+#[cfg(feature = "bench")]
 pub fn criterion_benchmark(c: &mut Criterion) {
   c.bench_function("snowflake_generator", |b| {
     b.iter(|| {
@@ -19,5 +22,10 @@ pub fn criterion_benchmark(c: &mut Criterion) {
   });
 }
 
+#[cfg(feature = "bench")]
 criterion_group!(benches, criterion_benchmark);
+#[cfg(feature = "bench")]
 criterion_main!(benches);
+
+#[cfg(not(feature = "bench"))]
+fn main() {}
