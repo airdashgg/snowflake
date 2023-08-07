@@ -62,6 +62,10 @@ impl Snowflake {
       .with_epoch(epoch)
   }
 
+  pub fn from_value(value: u64) -> Self { Self(value as u128).with_epoch(AIRDASH_EPOCH) }
+
+  pub fn from_value_with_epoch(value: u64, epoch: u64) -> Self { Self(value as u128).with_epoch(epoch) }
+
   pub fn offset_timestamp(&self) -> u64 { self.timestamp() + self.epoch() }
 }
 
@@ -90,8 +94,6 @@ mod tests {
   #[test]
   fn test_new() {
     let snowflake = Snowflake::new(WORKER, PROCESS, INCREMENT);
-
-    println!("{:b}", snowflake.0);
 
     assert_eq!(snowflake.worker(), WORKER);
     assert_eq!(snowflake.process(), PROCESS);
@@ -142,5 +144,28 @@ mod tests {
       snowflake.offset_timestamp(),
       snowflake.timestamp() + millis(epoch_timestamp)
     );
+  }
+
+  #[test]
+  fn test_from_value() {
+    let snowflake = Snowflake::new(WORKER, PROCESS, INCREMENT);
+
+    let value = snowflake.value();
+
+    let from_value = Snowflake::from_value(value);
+
+    assert_eq!(from_value, snowflake);
+  }
+
+  #[test]
+  fn test_from_value_with_epoch() {
+    let epoch_timestamp = datetime!(2014-07-08 09:10:11).assume_utc();
+    let snowflake = Snowflake::new_with_epoch(WORKER, PROCESS, INCREMENT, millis(epoch_timestamp));
+
+    let value = snowflake.value();
+
+    let from_value = Snowflake::from_value_with_epoch(value, millis(epoch_timestamp));
+
+    assert_eq!(from_value, snowflake);
   }
 }
