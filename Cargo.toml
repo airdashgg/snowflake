@@ -1,16 +1,21 @@
 [package]
 name = 'airdash_id'
-version = '0.1.0'
+version = '0.1.1'
 edition = '2021'
 license = 'MIT'
 
 [dependencies]
-proc-bitfield = '0.2.2'
+proc-bitfield = '0.3.0'
 time = { version = "0.3.21", features = ["macros"] }
+serde = { version = "1", optional = true }
 
 [features]
 default = []
 bench = []
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
 
 # disabled so it doesnt get included in dependents
 # [dev-dependencies]
