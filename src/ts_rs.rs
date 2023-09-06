@@ -6,6 +6,8 @@ const NAME: &str = "Snowflake";
 const TYPE: &str = "string";
 
 impl TS for Snowflake {
+  const EXPORT_TO: Option<&'static str> = Some("bindings/Snowflake.ts");
+
   fn decl() -> String { format!("type {NAME} = {TYPE};") }
 
   fn name() -> String { NAME.into() }
