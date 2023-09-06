@@ -1,5 +1,9 @@
 mod generator;
+#[cfg(feature = "serde")]
+mod serde;
 mod snowflake;
+#[cfg(feature = "ts_rs")]
+mod ts_rs;
 
 use time::OffsetDateTime;
 
