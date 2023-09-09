@@ -71,6 +71,14 @@ impl Display for Snowflake {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result { write!(f, "{}", self.value()) }
 }
 
+impl From<u64> for Snowflake {
+  fn from(value: u64) -> Self { Self::from_value(value) }
+}
+
+impl From<i64> for Snowflake {
+  fn from(value: i64) -> Self { (value as u64).into() }
+}
+
 #[cfg(test)]
 mod tests {
   use time::macros::datetime;
