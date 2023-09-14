@@ -1,5 +1,5 @@
 #[cfg(feature = "bench")]
-use airdash_id::SnowflakeGenerator;
+use snowflake::SnowflakeGenerator;
 #[cfg(feature = "bench")]
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
