@@ -6,8 +6,8 @@ license = 'MIT'
 
 [dependencies]
 proc-bitfield = '0.3.0'
-time = { version = "0.3.28", features = ["macros"] }
 serde = { version = "1", optional = true }
+time = { version = "0.3.28", features = ["macros"] }
 ts-rs = { version = "7.0.0", optional = true }
 
 [features]
@@ -19,7 +19,6 @@ ts_rs = ["dep:ts-rs"]
 [package.metadata.docs.rs]
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
-
 # disabled so it doesnt get included in dependents
 # [dev-dependencies]
 # criterion = '0.3'

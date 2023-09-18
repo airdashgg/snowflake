@@ -1,7 +1,7 @@
 #[cfg(feature = "bench")]
-use snowflake::SnowflakeGenerator;
-#[cfg(feature = "bench")]
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
+#[cfg(feature = "bench")]
+use snowflake::SnowflakeGenerator;
 
 #[cfg(feature = "bench")]
 pub fn criterion_benchmark(c: &mut Criterion) {
