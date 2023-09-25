@@ -20,7 +20,7 @@ bitfield! {
   /// increment: 4095
   /// ```
   #[derive(Clone, Copy, PartialEq, Eq)]
-  pub struct Snowflake(pub u128): Debug {
+  pub struct Snowflake(pub u128) {
     pub increment: u16 @ 0..12,
     pub process: u8 @ 12..17,
     pub worker: u8 @ 17..22,
@@ -69,6 +69,22 @@ impl Snowflake {
 
 impl Display for Snowflake {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result { write!(f, "{}", self.value()) }
+}
+
+impl std::fmt::Debug for Snowflake {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    if f.alternate() {
+      f.debug_struct("Snowflake")
+        .field("worker", &self.worker())
+        .field("process", &self.process())
+        .field("increment", &self.increment())
+        .field("timestamp", &self.timestamp())
+        .field("epoch", &self.epoch())
+        .finish()
+    } else {
+      write!(f, "{self}")
+    }
+  }
 }
 
 impl From<u64> for Snowflake {
