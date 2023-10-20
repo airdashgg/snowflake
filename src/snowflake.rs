@@ -1,6 +1,8 @@
 use std::fmt::Display;
 
 use proc_bitfield::bitfield;
+#[cfg(feature = "ts_rs")]
+use specta::Type;
 use time::OffsetDateTime;
 
 use crate::{millis, AIRDASH_EPOCH};
@@ -20,6 +22,7 @@ bitfield! {
   /// increment: 4095
   /// ```
   #[derive(Clone, Copy, PartialEq, Eq)]
+  #[cfg_attr(feature = "ts_rs", derive(Type))]
   pub struct Snowflake(pub u128) {
     pub increment: u16 @ 0..12,
     pub process: u8 @ 12..17,
