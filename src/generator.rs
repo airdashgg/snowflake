@@ -21,7 +21,7 @@ impl SnowflakeGenerator {
   }
 
   pub fn generate(&mut self) -> Snowflake {
-    let snowflake = Snowflake::new_with_epoch(self.worker, self.process, self.increment, self.epoch);
+    let snowflake = Snowflake::new(self.worker, self.process, self.increment, self.epoch);
 
     self.increment = self.increment.wrapping_add(1);
 
