@@ -1,69 +1,110 @@
 use std::fmt::Display;
 
 use chrono::{DateTime, Utc};
-use proc_bitfield::bitfield;
 
 use crate::AIRDASH_EPOCH;
 
-bitfield! {
-  /// ```md
-  ///                                            worker
-  ///                                            │     process
-  /// timestamp                                  │     │     increment
-  /// │                                          │     │     │
-  /// 111111111111111111111111111111111111111111 11111 11111 111111111111
-  /// 63                                        22    17    12          0
-  ///
-  /// Max values:
-  /// worker: 31
-  /// process: 31
-  /// increment: 4095
-  /// ```
-  #[derive(Clone, Copy, PartialEq, Eq)]
-  #[cfg_attr(feature = "serde", derive(specta::Type))]
-  pub struct Snowflake(pub u128) {
-    pub increment: u16 @ 0..12,
-    pub process: u8 @ 12..17,
-    pub worker: u8 @ 17..22,
-    pub timestamp: u64 @ 22..64,
-    pub epoch: u64 @ 64..128,
-    pub value: u64 [read_only] @ 0..64,
-  }
+/// ```md
+/// |                                            worker
+/// |                                            │     process
+/// | timestamp                                  │     │     increment
+/// | │                                          │     │     │
+/// | 111111111111111111111111111111111111111111 11111 11111 111111111111
+/// | 63                                        22    17    12          0
+///
+/// Max values:
+/// worker: 31
+/// process: 31
+/// increment: 4095
+/// ```
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(specta::Type))]
+#[cfg_attr(feature = "serde", specta(transparent))]
+pub struct Snowflake {
+  #[specta(type = String)]
+  value: u64,
+  #[specta(skip)]
+  epoch: u64,
+}
+
+#[inline]
+const fn value_from_parts(timestamp: u64, worker: u8, process: u8, increment: u16) -> u64 {
+  let mut value = timestamp << 22;
+  value |= (worker as u64) << 17;
+  value |= (process as u64) << 12;
+  value |= increment as u64;
+
+  value
 }
 
 impl Snowflake {
+  #[inline]
   pub fn new(worker: u8, process: u8, increment: u16, epoch: u64) -> Self {
     Self::new_with_timestamp(worker, process, increment, Utc::now(), epoch)
   }
 
-  pub fn new_with_timestamp(worker: u8, process: u8, increment: u16, timestamp: DateTime<Utc>, epoch: u64) -> Self {
+  #[inline]
+  pub const fn new_with_timestamp(
+    worker: u8,
+    process: u8,
+    increment: u16,
+    timestamp: DateTime<Utc>,
+    epoch: u64,
+  ) -> Self {
     let offset_timestamp_ms = timestamp.timestamp_millis() - epoch as i64;
 
-    Self(0)
-      .with_worker(worker)
-      .with_process(process)
-      .with_increment(increment)
-      .with_timestamp(offset_timestamp_ms as u64)
-      .with_epoch(epoch)
+    let value = value_from_parts(offset_timestamp_ms as u64, worker, process, increment);
+
+    Self { value, epoch }
   }
 
-  pub fn from_value(value: u64, epoch: u64) -> Self { Self(value as u128).with_epoch(epoch) }
+  #[inline]
+  pub const fn from_value(value: u64, epoch: u64) -> Self { Self { value, epoch } }
 
+  #[inline]
   pub fn new_airdash_epoch(worker: u8, process: u8, increment: u16) -> Self {
     Self::new_with_timestamp(worker, process, increment, Utc::now(), AIRDASH_EPOCH)
   }
 
-  pub fn new_with_timestamp_airdash_epoch(worker: u8, process: u8, increment: u16, timestamp: DateTime<Utc>) -> Self {
+  #[inline]
+  pub const fn new_with_timestamp_airdash_epoch(
+    worker: u8,
+    process: u8,
+    increment: u16,
+    timestamp: DateTime<Utc>,
+  ) -> Self {
     Self::new_with_timestamp(worker, process, increment, timestamp, AIRDASH_EPOCH)
   }
 
-  pub fn from_value_airdash_epoch(value: u64) -> Self { Self(value as u128).with_epoch(AIRDASH_EPOCH) }
+  #[inline]
+  pub fn from_value_airdash_epoch(value: u64) -> Self { Self::from_value(value, AIRDASH_EPOCH) }
 
+  #[inline]
   pub fn offset_timestamp(&self) -> u64 { self.timestamp() + self.epoch() }
 
-  pub fn as_i64(&self) -> i64 { self.value() as i64 }
+  #[inline]
+  pub const fn as_i64(&self) -> i64 { self.value() as i64 }
 
-  pub fn as_u64(&self) -> u64 { self.value() }
+  #[inline]
+  pub const fn as_u64(&self) -> u64 { self.value() }
+
+  #[inline]
+  pub const fn value(&self) -> u64 { self.value }
+
+  #[inline]
+  pub const fn worker(&self) -> u8 { ((self.value >> 17) & 0b11111) as u8 }
+
+  #[inline]
+  pub const fn process(&self) -> u8 { ((self.value >> 12) & 0b11111) as u8 }
+
+  #[inline]
+  pub const fn increment(&self) -> u16 { (self.value & 0b111111111111) as u16 }
+
+  #[inline]
+  pub const fn timestamp(&self) -> u64 { self.value >> 22 }
+
+  #[inline]
+  pub const fn epoch(&self) -> u64 { self.epoch }
 }
 
 impl Display for Snowflake {
@@ -96,6 +137,8 @@ impl From<i64> for Snowflake {
 
 #[cfg(test)]
 mod tests {
+  use chrono::TimeZone;
+
   use super::*;
 
   const WORKER: u8 = 8;
@@ -114,46 +157,40 @@ mod tests {
 
   #[test]
   fn test_new_with_timestamp() {
-    let timestamp = datetime!(2022-07-08 09:10:11).assume_utc();
+    let timestamp = Utc.with_ymd_and_hms(2022, 7, 8, 9, 10, 11).unwrap();
 
     let snowflake = Snowflake::new_with_timestamp_airdash_epoch(WORKER, PROCESS, INCREMENT, timestamp);
 
     assert_eq!(snowflake.worker(), WORKER);
     assert_eq!(snowflake.process(), PROCESS);
     assert_eq!(snowflake.increment(), INCREMENT);
-    assert_eq!(snowflake.offset_timestamp(), millis(timestamp));
+    assert_eq!(snowflake.offset_timestamp(), timestamp.timestamp_millis() as u64);
   }
 
   #[test]
   fn test_new_with_epoch() {
-    let epoch_timestamp = datetime!(2014-07-08 09:10:11).assume_utc();
+    let epoch_timestamp = Utc.with_ymd_and_hms(2014, 7, 8, 9, 10, 11).unwrap().timestamp_millis() as u64;
 
-    let snowflake = Snowflake::new(WORKER, PROCESS, INCREMENT, millis(epoch_timestamp));
+    let snowflake = Snowflake::new(WORKER, PROCESS, INCREMENT, epoch_timestamp);
 
     assert_eq!(snowflake.worker(), WORKER);
     assert_eq!(snowflake.process(), PROCESS);
     assert_eq!(snowflake.increment(), INCREMENT);
-    assert_eq!(
-      snowflake.offset_timestamp(),
-      snowflake.timestamp() + millis(epoch_timestamp)
-    );
+    assert_eq!(snowflake.offset_timestamp(), snowflake.timestamp() + epoch_timestamp);
   }
 
   #[test]
   fn test_new_with_timestamp_and_epoch() {
-    let timestamp = datetime!(2022-07-08 09:10:11).assume_utc();
-    let epoch_timestamp = datetime!(2014-07-08 09:10:11).assume_utc();
+    let timestamp = Utc.with_ymd_and_hms(2022, 7, 8, 9, 10, 11).unwrap();
+    let epoch_timestamp = Utc.with_ymd_and_hms(2014, 7, 8, 9, 10, 11).unwrap().timestamp_millis() as u64;
 
-    let snowflake = Snowflake::new_with_timestamp(WORKER, PROCESS, INCREMENT, timestamp, millis(epoch_timestamp));
+    let snowflake = Snowflake::new_with_timestamp(WORKER, PROCESS, INCREMENT, timestamp, epoch_timestamp);
 
     assert_eq!(snowflake.worker(), WORKER);
     assert_eq!(snowflake.process(), PROCESS);
     assert_eq!(snowflake.increment(), INCREMENT);
-    assert_eq!(snowflake.offset_timestamp(), millis(timestamp));
-    assert_eq!(
-      snowflake.offset_timestamp(),
-      snowflake.timestamp() + millis(epoch_timestamp)
-    );
+    assert_eq!(snowflake.offset_timestamp(), timestamp.timestamp_millis() as u64);
+    assert_eq!(snowflake.offset_timestamp(), snowflake.timestamp() + epoch_timestamp);
   }
 
   #[test]
@@ -169,12 +206,12 @@ mod tests {
 
   #[test]
   fn test_from_value_with_epoch() {
-    let epoch_timestamp = datetime!(2014-07-08 09:10:11).assume_utc();
-    let snowflake = Snowflake::new(WORKER, PROCESS, INCREMENT, millis(epoch_timestamp));
+    let epoch_timestamp = Utc.with_ymd_and_hms(2014, 7, 8, 9, 10, 11).unwrap().timestamp_millis() as u64;
+    let snowflake = Snowflake::new(WORKER, PROCESS, INCREMENT, epoch_timestamp);
 
     let value = snowflake.value();
 
-    let from_value = Snowflake::from_value(value, millis(epoch_timestamp));
+    let from_value = Snowflake::from_value(value, epoch_timestamp);
 
     assert_eq!(from_value, snowflake);
   }

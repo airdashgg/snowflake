@@ -5,13 +5,15 @@ edition = '2021'
 license = 'MIT'
 
 [dependencies]
-proc-bitfield = '0.5.2'
 serde = { version = "1", optional = true }
 serde-aux = "4.6.0"
-specta = { version = "=2.0.0-rc.22", features = ["derive", "export"] }
-specta-typescript = "=0.0.9"
-specta-serde       = "=0.0.9"
 chrono = "^0.4"
+
+[dependencies.specta]
+version = "=2.0.0-rc.22"
+features = ["derive", "export"]
+git = "https://github.com/specta-rs/specta.git"
+branch = "main"
 
 [features]
 default = ["serde"]
