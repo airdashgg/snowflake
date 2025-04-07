@@ -9,8 +9,6 @@ pub struct SnowflakeGenerator {
 }
 
 impl SnowflakeGenerator {
-  pub fn new_airdash_epoch(worker: u8, process: u8) -> Self { Self::new(worker, process, AIRDASH_EPOCH) }
-
   pub fn new(worker: u8, process: u8, epoch: u64) -> Self {
     Self {
       epoch,
@@ -30,7 +28,7 @@ impl SnowflakeGenerator {
 }
 
 impl Default for SnowflakeGenerator {
-  fn default() -> Self { Self::new_airdash_epoch(0, 0) }
+  fn default() -> Self { Self::new(0, 0, AIRDASH_EPOCH) }
 }
 
 impl Iterator for SnowflakeGenerator {
@@ -53,7 +51,7 @@ mod tests {
 
   #[test]
   fn test_generates_no_duplicates() {
-    let generator = SnowflakeGenerator::new_airdash_epoch(WORKER, PROCESS);
+    let generator = SnowflakeGenerator::new(WORKER, PROCESS, AIRDASH_EPOCH);
 
     let snowflakes = generator.take(GENERATED_COUNT).collect::<Vec<Snowflake>>();
 
@@ -69,7 +67,7 @@ mod tests {
   fn test_generates_correct_values() {
     let start_time = Utc::now();
 
-    let generator = SnowflakeGenerator::new_airdash_epoch(WORKER, PROCESS);
+    let generator = SnowflakeGenerator::new(WORKER, PROCESS, AIRDASH_EPOCH);
 
     let snowflakes = generator.take(GENERATED_COUNT).collect::<Vec<Snowflake>>();
 
@@ -79,7 +77,7 @@ mod tests {
       assert_eq!(snowflake.worker(), WORKER);
       assert_eq!(snowflake.process(), PROCESS);
 
-      assert!(snowflake.offset_timestamp() >= start_time.timestamp_millis() as u64);
+      assert!(snowflake.timestamp(AIRDASH_EPOCH) >= start_time.timestamp_millis() as u64);
     }
   }
 }

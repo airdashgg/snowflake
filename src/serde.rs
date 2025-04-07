@@ -15,6 +15,6 @@ impl<'de> Deserialize<'de> for Snowflake {
   where D: serde::Deserializer<'de> {
     let value: u64 = deserialize_number_from_string(deserializer)?;
 
-    Ok(Self::from_value_airdash_epoch(value))
+    Ok(Self::from_value(value))
   }
 }
